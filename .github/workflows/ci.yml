@@ -36,40 +36,73 @@ jobs:
 
           echo "Root files:"
           ls -la
-          
+
           echo "Create runtime folders if missing:"
           mkdir -p models
           mkdir -p outputs
-          
+          mkdir -p packages
+
           echo "Check source folders:"
           if [ ! -d "inference" ]; then echo "Missing inference folder"; exit 1; fi
           if [ ! -d "images" ]; then echo "Missing images folder"; exit 1; fi
           if [ ! -d "tools" ]; then echo "Missing tools folder"; exit 1; fi
           if [ ! -d "tests" ]; then echo "Missing tests folder"; exit 1; fi
-          
+
           echo "Check required files:"
-          if [ ! -f "inference/run_image_detection.py" ]; then echo "Missing run_image_detection.py"; exit 1; fi
-          if [ ! -f "inference/run_onnx_detection.py" ]; then echo "Missing run_onnx_detection.py"; exit 1; fi
-          if [ ! -f "tools/export_yolo_to_onnx.py" ]; then echo "Missing export_yolo_to_onnx.py"; exit 1; fi
-          if [ ! -f "images/dog.jpg" ]; then echo "Missing dog.jpg"; exit 1; fi
+          if [ ! -f "inference/run_image_detection.py" ]; then echo "Missing inference/run_image_detection.py"; exit 1; fi
+          if [ ! -f "inference/run_onnx_detection.py" ]; then echo "Missing inference/run_onnx_detection.py"; exit 1; fi
+          if [ ! -f "tools/export_yolo_to_onnx.py" ]; then echo "Missing tools/export_yolo_to_onnx.py"; exit 1; fi
+          if [ ! -f "tools/create_model_package.py" ]; then echo "Missing tools/create_model_package.py"; exit 1; fi
+          if [ ! -f "images/dog.jpg" ]; then echo "Missing images/dog.jpg"; exit 1; fi
           if [ ! -f "requirements.txt" ]; then echo "Missing requirements.txt"; exit 1; fi
 
           echo "Project structure is valid."
+
       - name: Run environment tests
         run: |
           pytest tests/
 
       - name: Run YOLO image detection with PyTorch model
         run: |
-          python inference/run_image_detection.py --image images/dog.jpg --output outputs
+          python inference/run_image_detection.py \
+            --image images/dog.jpg \
+            --output outputs \
+            --model yolov8n.pt
 
       - name: Export YOLO model to ONNX
         run: |
-          python tools/export_yolo_to_onnx.py --model yolov8n.pt --output models/yolov8n.onnx
+          python tools/export_yolo_to_onnx.py \
+            --model yolov8n.pt \
+            --output models/yolov8n.onnx \
+            --imgsz 640
 
       - name: Run YOLO image detection with ONNX model
         run: |
-          python inference/run_onnx_detection.py --model models/yolov8n.onnx --image images/dog.jpg --output outputs
+          python inference/run_onnx_detection.py \
+            --model models/yolov8n.onnx \
+            --image images/dog.jpg \
+            --output outputs
+
+      - name: Create model package
+        run: |
+          python tools/create_model_package.py \
+            --model models/yolov8n.onnx \
+            --output packages \
+            --name yolov8n_edge_model \
+            --version v0.1.${{ github.run_number }} \
+            --format onnx \
+            --imgsz 640
+
+      - name: Show generated files
+        run: |
+          echo "Outputs:"
+          ls -la outputs
+
+          echo "Models:"
+          ls -la models
+
+          echo "Packages:"
+          ls -la packages
 
       - name: Upload detection results
         uses: actions/upload-artifact@v4
@@ -77,8 +110,8 @@ jobs:
           name: detection-results
           path: outputs/
 
-      - name: Upload ONNX model
+      - name: Upload ONNX model package
         uses: actions/upload-artifact@v4
         with:
-          name: onnx-model
-          path: models/yolov8n.onnx
+          name: onnx-model-package
+          path: packages/
