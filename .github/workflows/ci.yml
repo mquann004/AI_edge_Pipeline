@@ -56,6 +56,7 @@ jobs:
           if [ ! -f "inference/run_onnx_detection.py" ]; then echo "Missing inference/run_onnx_detection.py"; exit 1; fi
           if [ ! -f "tools/export_yolo_to_onnx.py" ]; then echo "Missing tools/export_yolo_to_onnx.py"; exit 1; fi
           if [ ! -f "tools/create_model_package.py" ]; then echo "Missing tools/create_model_package.py"; exit 1; fi
+          if [ ! -f "tools/create_corrupted_package.py" ]; then echo "Missing tools/create_corrupted_package.py"; exit 1; fi
           if [ ! -f "update_agent/ota_update_agent.py" ]; then echo "Missing update_agent/ota_update_agent.py"; exit 1; fi
           if [ ! -f "edge_runtime/inference_service.py" ]; then echo "Missing edge_runtime/inference_service.py"; exit 1; fi
           if [ ! -f "images/dog.jpg" ]; then echo "Missing images/dog.jpg"; exit 1; fi
@@ -122,6 +123,60 @@ jobs:
             --output outputs/edge_runtime_result.jpg \
             --metrics outputs/edge_runtime_metrics.json
 
+      - name: Create corrupted package for rollback test
+        run: |
+          VALID_PACKAGE_FILE=$(find packages -name "*.zip" ! -name "corrupted_model_package.zip" | head -n 1)
+
+          if [ -z "$VALID_PACKAGE_FILE" ]; then
+            echo "No valid model package found."
+            exit 1
+          fi
+
+          echo "Using valid package as source: $VALID_PACKAGE_FILE"
+
+          python tools/create_corrupted_package.py \
+            --source-package "$VALID_PACKAGE_FILE" \
+            --output packages/corrupted_model_package.zip \
+            --bad-version v0.1.bad.${{ github.run_number }}
+
+      - name: Test rollback with corrupted package
+        run: |
+          BEFORE_VERSION=$(python -c "import json; print(json.load(open('edge_device/current_version.json'))['version'])")
+          echo "Version before corrupted update: $BEFORE_VERSION"
+
+          set +e
+          python update_agent/ota_update_agent.py \
+            --package packages/corrupted_model_package.zip \
+            --device-dir edge_device \
+            --force
+          EXIT_CODE=$?
+          set -e
+
+          if [ "$EXIT_CODE" -eq 0 ]; then
+            echo "Rollback test failed: corrupted package was accepted."
+            exit 1
+          fi
+
+          echo "Corrupted package was rejected as expected."
+
+          AFTER_VERSION=$(python -c "import json; print(json.load(open('edge_device/current_version.json'))['version'])")
+          echo "Version after corrupted update: $AFTER_VERSION"
+
+          if [ "$BEFORE_VERSION" != "$AFTER_VERSION" ]; then
+            echo "Rollback test failed: active model version changed after failed update."
+            exit 1
+          fi
+
+          echo "Rollback test passed: active model version remains unchanged."
+
+      - name: Test edge runtime after rollback
+        run: |
+          python edge_runtime/inference_service.py \
+            --device-dir edge_device \
+            --image images/dog.jpg \
+            --output outputs/edge_runtime_after_rollback.jpg \
+            --metrics outputs/edge_runtime_after_rollback_metrics.json
+
       - name: Show generated files
         run: |
           echo "Outputs:"
@@ -151,6 +206,13 @@ jobs:
             cat outputs/edge_runtime_metrics.json
           else
             echo "No edge runtime metrics found."
+          fi
+
+          echo "Rollback runtime metrics:"
+          if [ -f "outputs/edge_runtime_after_rollback_metrics.json" ]; then
+            cat outputs/edge_runtime_after_rollback_metrics.json
+          else
+            echo "No rollback runtime metrics found."
           fi
 
       - name: Upload detection results
