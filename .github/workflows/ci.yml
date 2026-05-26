@@ -49,6 +49,7 @@ jobs:
           if [ ! -d "tools" ]; then echo "Missing tools folder"; exit 1; fi
           if [ ! -d "tests" ]; then echo "Missing tests folder"; exit 1; fi
           if [ ! -d "update_agent" ]; then echo "Missing update_agent folder"; exit 1; fi
+          if [ ! -d "edge_runtime" ]; then echo "Missing edge_runtime folder"; exit 1; fi
 
           echo "Check required files:"
           if [ ! -f "inference/run_image_detection.py" ]; then echo "Missing inference/run_image_detection.py"; exit 1; fi
@@ -56,6 +57,7 @@ jobs:
           if [ ! -f "tools/export_yolo_to_onnx.py" ]; then echo "Missing tools/export_yolo_to_onnx.py"; exit 1; fi
           if [ ! -f "tools/create_model_package.py" ]; then echo "Missing tools/create_model_package.py"; exit 1; fi
           if [ ! -f "update_agent/ota_update_agent.py" ]; then echo "Missing update_agent/ota_update_agent.py"; exit 1; fi
+          if [ ! -f "edge_runtime/inference_service.py" ]; then echo "Missing edge_runtime/inference_service.py"; exit 1; fi
           if [ ! -f "images/dog.jpg" ]; then echo "Missing images/dog.jpg"; exit 1; fi
           if [ ! -f "requirements.txt" ]; then echo "Missing requirements.txt"; exit 1; fi
 
@@ -112,6 +114,14 @@ jobs:
             --device-dir edge_device \
             --force
 
+      - name: Test edge runtime inference service
+        run: |
+          python edge_runtime/inference_service.py \
+            --device-dir edge_device \
+            --image images/dog.jpg \
+            --output outputs/edge_runtime_result.jpg \
+            --metrics outputs/edge_runtime_metrics.json
+
       - name: Show generated files
         run: |
           echo "Outputs:"
@@ -134,6 +144,13 @@ jobs:
             cat edge_device/logs/ota_update.log
           else
             echo "No OTA log found."
+          fi
+
+          echo "Edge runtime metrics:"
+          if [ -f "outputs/edge_runtime_metrics.json" ]; then
+            cat outputs/edge_runtime_metrics.json
+          else
+            echo "No edge runtime metrics found."
           fi
 
       - name: Upload detection results
