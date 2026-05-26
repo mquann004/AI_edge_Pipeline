@@ -97,13 +97,14 @@ def main():
     parser.add_argument("--format", type=str, default="onnx", help="Model format")
     parser.add_argument("--imgsz", type=int, default=640, help="Image size")
 
-    args = parser.parse_args()
+   
     parser.add_argument(
     "--download-url",
     type=str,
     default="TO_BE_UPDATED_IN_RELEASE_STAGE",
     help="Download URL for the model package"
 )
+    args = parser.parse_args()
 
     create_model_package(
         model_path=args.model,
