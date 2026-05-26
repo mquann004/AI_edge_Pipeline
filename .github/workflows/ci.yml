@@ -43,7 +43,7 @@ jobs:
 
       - name: Run YOLO image detection
         run: |
-          python inference/run_image_detection.py --image images/test.jpg --output outputs
+          python inference/run_image_detection.py --image images/dog.jpg --output outputs
 
       - name: Upload detection result
         uses: actions/upload-artifact@v4
