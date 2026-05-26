@@ -37,3 +37,6 @@ edge_device/
 
 # Generated model packages
 packages/
+
+# Downloaded remote packages
+downloads/
