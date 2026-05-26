@@ -41,18 +41,21 @@ jobs:
           mkdir -p models
           mkdir -p outputs
           mkdir -p packages
+          mkdir -p edge_device
 
           echo "Check source folders:"
           if [ ! -d "inference" ]; then echo "Missing inference folder"; exit 1; fi
           if [ ! -d "images" ]; then echo "Missing images folder"; exit 1; fi
           if [ ! -d "tools" ]; then echo "Missing tools folder"; exit 1; fi
           if [ ! -d "tests" ]; then echo "Missing tests folder"; exit 1; fi
+          if [ ! -d "update_agent" ]; then echo "Missing update_agent folder"; exit 1; fi
 
           echo "Check required files:"
           if [ ! -f "inference/run_image_detection.py" ]; then echo "Missing inference/run_image_detection.py"; exit 1; fi
           if [ ! -f "inference/run_onnx_detection.py" ]; then echo "Missing inference/run_onnx_detection.py"; exit 1; fi
           if [ ! -f "tools/export_yolo_to_onnx.py" ]; then echo "Missing tools/export_yolo_to_onnx.py"; exit 1; fi
           if [ ! -f "tools/create_model_package.py" ]; then echo "Missing tools/create_model_package.py"; exit 1; fi
+          if [ ! -f "update_agent/ota_update_agent.py" ]; then echo "Missing update_agent/ota_update_agent.py"; exit 1; fi
           if [ ! -f "images/dog.jpg" ]; then echo "Missing images/dog.jpg"; exit 1; fi
           if [ ! -f "requirements.txt" ]; then echo "Missing requirements.txt"; exit 1; fi
 
@@ -93,6 +96,22 @@ jobs:
             --format onnx \
             --imgsz 640
 
+      - name: Test simulated OTA update agent
+        run: |
+          PACKAGE_FILE=$(find packages -name "*.zip" | head -n 1)
+
+          if [ -z "$PACKAGE_FILE" ]; then
+            echo "No model package zip file found."
+            exit 1
+          fi
+
+          echo "Using package: $PACKAGE_FILE"
+
+          python update_agent/ota_update_agent.py \
+            --package "$PACKAGE_FILE" \
+            --device-dir edge_device \
+            --force
+
       - name: Show generated files
         run: |
           echo "Outputs:"
@@ -103,6 +122,19 @@ jobs:
 
           echo "Packages:"
           ls -la packages
+
+          echo "Edge device root:"
+          ls -la edge_device
+
+          echo "Edge device current model:"
+          ls -la edge_device/current
+
+          echo "OTA logs:"
+          if [ -f "edge_device/logs/ota_update.log" ]; then
+            cat edge_device/logs/ota_update.log
+          else
+            echo "No OTA log found."
+          fi
 
       - name: Upload detection results
         uses: actions/upload-artifact@v4
@@ -115,3 +147,9 @@ jobs:
         with:
           name: onnx-model-package
           path: packages/
+
+      - name: Upload simulated edge device state
+        uses: actions/upload-artifact@v4
+        with:
+          name: edge-device-state
+          path: edge_device/
