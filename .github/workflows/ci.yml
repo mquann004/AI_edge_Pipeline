@@ -33,6 +33,7 @@ jobs:
         run: |
           echo "Current directory:"
           pwd
+
           echo "Root files:"
           ls -la
           
@@ -41,16 +42,19 @@ jobs:
           mkdir -p outputs
           
           echo "Check source folders:"
-          test -d inference
-          test -d images
-          test -d tools
+          if [ ! -d "inference" ]; then echo "Missing inference folder"; exit 1; fi
+          if [ ! -d "images" ]; then echo "Missing images folder"; exit 1; fi
+          if [ ! -d "tools" ]; then echo "Missing tools folder"; exit 1; fi
+          if [ ! -d "tests" ]; then echo "Missing tests folder"; exit 1; fi
           
           echo "Check required files:"
-          test -f inference/run_image_detection.py
-          test -f inference/run_onnx_detection.py
-          test -f tools/export_yolo_to_onnx.py
-          test -f images/dog.jpg\
-          test -f requirements.txt
+          if [ ! -f "inference/run_image_detection.py" ]; then echo "Missing run_image_detection.py"; exit 1; fi
+          if [ ! -f "inference/run_onnx_detection.py" ]; then echo "Missing run_onnx_detection.py"; exit 1; fi
+          if [ ! -f "tools/export_yolo_to_onnx.py" ]; then echo "Missing export_yolo_to_onnx.py"; exit 1; fi
+          if [ ! -f "images/dog.jpg" ]; then echo "Missing dog.jpg"; exit 1; fi
+          if [ ! -f "requirements.txt" ]; then echo "Missing requirements.txt"; exit 1; fi
+
+          echo "Project structure is valid."
       - name: Run environment tests
         run: |
           pytest tests/
