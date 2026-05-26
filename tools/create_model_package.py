@@ -23,7 +23,8 @@ def create_model_package(
     model_name: str,
     version: str,
     model_format: str = "onnx",
-    image_size: int = 640
+    image_size: int = 640,
+    download_url: str = "TO_BE_UPDATED_IN_RELEASE_STAGE"
 ):
     model_path = Path(model_path)
     output_dir = Path(output_dir)
@@ -65,7 +66,7 @@ def create_model_package(
         "file_size_bytes": file_size,
         "sha256": checksum,
         "created_at": created_at,
-        "download_url": "TO_BE_UPDATED_IN_RELEASE_STAGE"
+        "download_url": download_url
     }
 
     metadata_path = package_dir / "metadata.json"
@@ -97,6 +98,12 @@ def main():
     parser.add_argument("--imgsz", type=int, default=640, help="Image size")
 
     args = parser.parse_args()
+    parser.add_argument(
+    "--download-url",
+    type=str,
+    default="TO_BE_UPDATED_IN_RELEASE_STAGE",
+    help="Download URL for the model package"
+)
 
     create_model_package(
         model_path=args.model,
@@ -104,7 +111,9 @@ def main():
         model_name=args.name,
         version=args.version,
         model_format=args.format,
-        image_size=args.imgsz
+        image_size=args.imgsz,
+        download_url=args.download_url
+        
     )
 
 
