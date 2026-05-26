@@ -31,15 +31,26 @@ jobs:
 
       - name: Check project structure
         run: |
+          echo "Current directory:"
+          pwd
+          echo "Root files:"
+          ls -la
+          
+          echo "Create runtime folders if missing:"
+          mkdir -p models
+          mkdir -p outputs
+          
+          echo "Check source folders:"
           test -d inference
           test -d images
-          test -d models
+          test -d tools
+          
+          echo "Check required files:"
           test -f inference/run_image_detection.py
           test -f inference/run_onnx_detection.py
           test -f tools/export_yolo_to_onnx.py
-          test -f images/dog.jpg
+          test -f images/dog.jpg\
           test -f requirements.txt
-
       - name: Run environment tests
         run: |
           pytest tests/
