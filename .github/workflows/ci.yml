@@ -1,0 +1,52 @@
+name: Edge AI CI Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test-ai-project:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Upgrade pip
+        run: |
+          python -m pip install --upgrade pip
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Check project structure
+        run: |
+          test -d inference
+          test -d images
+          test -f inference/run_image_detection.py
+          test -f images/dog.jpg
+          test -f requirements.txt
+
+      - name: Run environment tests
+        run: |
+          pytest tests/
+
+      - name: Run YOLO image detection
+        run: |
+          python inference/run_image_detection.py --image images/test.jpg --output outputs
+
+      - name: Upload detection result
+        uses: actions/upload-artifact@v4
+        with:
+          name: detection-result
+          path: outputs/

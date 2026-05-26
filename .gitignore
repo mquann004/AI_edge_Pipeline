@@ -24,3 +24,7 @@ Thumbs.db
 # IDE files
 .vscode/
 .idea/
+
+# Output files
+outputs/*
+!outputs/.gitkeep
