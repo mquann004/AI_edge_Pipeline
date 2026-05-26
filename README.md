@@ -1,35 +1,45 @@
-# Edge AI Pipeline
+# Edge AI Pipeline for Automated Model Deployment
 
 ## 1. Project Overview
 
-This project aims to build an Edge AI pipeline that supports automatic model testing, optimization, deployment, and update on edge devices such as Raspberry Pi.
+This project builds an **Edge AI Pipeline** that supports automated model testing, optimization, packaging, release, remote update, rollback, and real-time inference on an Edge device such as Raspberry Pi.
 
-The first stage focuses on running an AI object detection model using YOLO and OpenCV.
+The main idea of this project is not only to run an AI model on a camera, but to simulate a complete AI deployment workflow similar to a real-world production system.
 
-## 2. Current Features
+The system can:
 
-- Run YOLOv8 model on a test image
-- Run YOLOv8 model with webcam
-- Prepare project structure for future CI/CD pipeline
+- Run YOLO object detection on images and camera input.
+- Export YOLO model from PyTorch `.pt` format to ONNX `.onnx`.
+- Automatically test the model using GitHub Actions.
+- Package the model with `metadata.json` and `manifest.json`.
+- Publish the model package to GitHub Release.
+- Allow an Edge device to download the latest model package remotely.
+- Verify the model using SHA256 checksum before activation.
+- Activate the model into the Edge runtime environment.
+- Reject corrupted model packages and keep the current model safe.
+- Run inference using the latest active model on Raspberry Pi.
 
-## 3. Technologies
+---
 
-- Python
-- OpenCV
-- Ultralytics YOLO
-- Git
-- GitHub
-- Future: Docker, GitHub Actions, ONNX, Raspberry Pi
+## 2. Project Purpose
 
-## 4. Project Structure
+The purpose of this project is to demonstrate a complete workflow for deploying an AI model to an Edge device.
+
+Instead of manually copying a model file to the device, this project builds an automated pipeline:
 
 ```text
-edge-ai-pipeline/
-├── inference/
-│   ├── test_yolo.py
-│   └── test_camera.py
-├── images/
-├── models/
-├── requirements.txt
-├── README.md
-└── .gitignore
+Code Update
+    ↓
+GitHub Actions CI
+    ↓
+Model Export to ONNX
+    ↓
+Model Package Creation
+    ↓
+GitHub Release
+    ↓
+Remote Update Agent
+    ↓
+OTA Model Update
+    ↓
+Edge Runtime Inference
