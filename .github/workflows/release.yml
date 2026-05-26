@@ -104,6 +104,19 @@ jobs:
             --image images/dog.jpg \
             --output outputs/release_edge_runtime_result.jpg \
             --metrics outputs/release_edge_runtime_metrics.json
+      - name: Extract manifest for release
+        run: |
+          PACKAGE_FILE="packages/${PACKAGE_NAME}"
+
+          if [ ! -f "$PACKAGE_FILE" ]; then
+            echo "Package not found: $PACKAGE_FILE"
+            exit 1
+          fi
+
+          unzip -p "$PACKAGE_FILE" manifest.json > packages/manifest.json
+
+          echo "Extracted manifest:"
+          cat packages/manifest.json
 
       - name: Show release package contents
         run: |
@@ -125,6 +138,7 @@ jobs:
         run: |
           gh release create "${TAG_NAME}" \
             "packages/${PACKAGE_NAME}#${PACKAGE_NAME}" \
+            "packages/manifest.json#manifest.json" \
             --title "Edge AI Model ${TAG_NAME}" \
             --notes "Release ${TAG_NAME} for Edge AI ONNX model package. This package includes the ONNX model, metadata.json, and manifest.json for OTA update."
 
