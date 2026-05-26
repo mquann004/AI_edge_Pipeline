@@ -33,7 +33,10 @@ jobs:
         run: |
           test -d inference
           test -d images
+          test -d models
           test -f inference/run_image_detection.py
+          test -f inference/run_onnx_detection.py
+          test -f tools/export_yolo_to_onnx.py
           test -f images/dog.jpg
           test -f requirements.txt
 
@@ -41,12 +44,26 @@ jobs:
         run: |
           pytest tests/
 
-      - name: Run YOLO image detection
+      - name: Run YOLO image detection with PyTorch model
         run: |
           python inference/run_image_detection.py --image images/dog.jpg --output outputs
 
-      - name: Upload detection result
+      - name: Export YOLO model to ONNX
+        run: |
+          python tools/export_yolo_to_onnx.py --model yolov8n.pt --output models/yolov8n.onnx
+
+      - name: Run YOLO image detection with ONNX model
+        run: |
+          python inference/run_onnx_detection.py --model models/yolov8n.onnx --image images/dog.jpg --output outputs
+
+      - name: Upload detection results
         uses: actions/upload-artifact@v4
         with:
-          name: detection-result
+          name: detection-results
           path: outputs/
+
+      - name: Upload ONNX model
+        uses: actions/upload-artifact@v4
+        with:
+          name: onnx-model
+          path: models/yolov8n.onnx
